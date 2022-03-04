@@ -1,10 +1,17 @@
-import React, { useContext } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { GlobalContext } from '../context/GlobalState';
 import { Transaction } from './Transaction';
 
 export const TransactionList = () => {
     // use Destructuring instead of context.transactions //
-    const { transactions } = useContext(GlobalContext);
+    const { transactions, getTransactions } = useContext(GlobalContext);
+
+    //use useEffect whenever you deal with http request from component 
+    useEffect(() => {
+      getTransactions();
+      // this will stop warning from firing off; warning is for infinite loop 
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     
   return (
     <>

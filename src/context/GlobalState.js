@@ -3,11 +3,15 @@
 
 import React, { createContext , useReducer } from 'react';
 import AppReducer from './AppReducer';
+import axios from 'axios';
 
 // Initial State //
 // Any Global State would go in this //
 const initialState = {
-    transactions: []
+    transactions: [],
+// Add state because dealing with backend //
+    error: null,
+    loading: true 
 }
 
 // Create our GlobalContext using createContext we brought in //
@@ -21,24 +25,71 @@ export const GlobalProvider = ({ children }) =>{
     const [state, dispatch] = useReducer(AppReducer, initialState);
 
         //Actions that make calls to reducer//
-        function deleteTransaction(id){
-            dispatch({
-                type: 'DELETE_TRANSACTION',
-                // payload is any data that we want to send to it //
-                payload: id
-            });
+
+        async function getTransactions(){
+            try {
+                const res = await axios.get("/api/v1/transactions");
+
+        //Dispatch to reducer; changing state; starts off as empty array, we make the request and then send response down through the state
+                dispatch({
+                    type: "GET_TRANSACTIONS",
+                    payload: res.data.data
+                });
+            } catch (error) {
+                dispatch({
+                    type: "TRANSACTION_ERROR",
+                    payload: error.response.data.error
+                });
+            }
         }
 
-        function addTransaction(transaction){
-            dispatch({
+        async function deleteTransaction(id){
+            try {
+                //make call to DB
+                await axios.delete(`/api/v1/transactions/${id}`);
+                
+                dispatch({
+                    type: 'DELETE_TRANSACTION',
+                    // payload is any data that we want to send to it //
+                    payload: id
+                });
+            } catch (error) {
+                dispatch({
+                    type: "TRANSACTION_ERROR",
+                    payload: error.response.data.error
+                });
+            }          
+        }
+
+        async function addTransaction(transaction){
+            //need content type since we are actually sending data
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+
+            try {
+                const res = await axios.post(`/api/v1/transactions`, transaction, config);
+
+                dispatch({
                 type: 'ADD_TRANSACTION',
                 // payload is any data that we want to send to it //
-                payload: transaction
+                payload: res.data.data
             });
+            } catch (error) {
+                dispatch({
+                    type: "TRANSACTION_ERROR",
+                    payload: error.response.data.error
+                });
+            }
         }
 
     return (<GlobalContext.Provider value={{
         transactions: state.transactions, 
+        error: state.error,
+        loading: state.loading,
+        getTransactions,
         deleteTransaction, 
         addTransaction
     }}>
